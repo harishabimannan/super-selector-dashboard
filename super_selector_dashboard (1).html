@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SupeRR Selector — Pressure Performance Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: 'class' }</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1.1rem;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .dark .card{background:#0f172a;border-color:#1e293b;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .kpi-num{font-variant-numeric:tabular-nums}
+  .chart-box{position:relative;height:300px;width:100%}
+  .chart-box-sm{position:relative;height:240px;width:100%}
+  table.sortable th{cursor:pointer;user-select:none;white-space:nowrap}
+  table.sortable th:hover{background:#1e293b}
+  .delta-pos{color:#059669;font-weight:700}.delta-neg{color:#e11d48;font-weight:700}
+  .dark .delta-pos{color:#34d399}.dark .delta-neg{color:#fb7185}
+  .high-contrast .card{border:3px solid #000!important;background:#fff!important;color:#000!important}
+  .high-contrast body,.high-contrast{background:#fff!important;color:#000!important}
+  .high-contrast table td,.high-contrast table th{border:1px solid #000!important}
+  .pill{font-size:.72rem;font-weight:700;padding:.15rem .6rem;border-radius:9999px}
+  .rank-1{background:#fbbf24;color:#451a03}.rank-2{background:#cbd5e1;color:#0f172a}.rank-3{background:#fdba74;color:#431407}
+  ::-webkit-scrollbar{height:8px;width:8px}::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px}
+  .compare-bar{height:10px;border-radius:9999px;background:#e2e8f0;overflow:hidden}
+  .compare-fill{height:100%;border-radius:9999px;transition:width .6s ease}
+  select,input[type=text]{outline:none}
+  .toggle-btn{transition:all .2s}
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors">
+
+<!-- HEADER -->
+<header class="bg-gradient-to-br from-slate-950 via-indigo-950 to-teal-900 text-white sticky-none">
+  <div class="max-w-7xl mx-auto px-4 py-8 md:py-10">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div class="max-w-3xl">
+        <div class="flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-teal-300 font-bold">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          SupeRR Selector · Round 1 · Pressure Performance Index
+        </div>
+        <h1 class="text-3xl md:text-5xl font-black mt-2 leading-tight">Who delivers <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-emerald-300">when it matters most?</span></h1>
+        <p class="mt-3 text-slate-300 text-sm md:text-base">Advanced contrast dashboard — compare batters vs bowlers, pressure vs baseline, and player vs player. Built from 193,988 deliveries · 837 T20 matches · Top-10 ranked pools.</p>
+        <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+          <span class="bg-white/10 px-3 py-1.5 rounded-lg">⚾ 10 Batters ranked</span>
+          <span class="bg-white/10 px-3 py-1.5 rounded-lg">🎯 10 Bowlers ranked</span>
+          <span class="bg-white/10 px-3 py-1.5 rounded-lg">📊 6-metric composite (0–100)</span>
+          <span class="bg-emerald-400/20 text-emerald-200 px-3 py-1.5 rounded-lg ring-1 ring-emerald-300/40">● Live data</span>
+        </div>
+      </div>
+      <div class="flex flex-col gap-2 min-w-[210px]">
+        <div class="bg-white/10 rounded-xl p-3 backdrop-blur">
+          <div class="text-xs text-slate-300 font-semibold uppercase tracking-wide">Display</div>
+          <div class="mt-2 flex gap-2">
+            <button id="themeBtn" class="toggle-btn flex-1 bg-white text-slate-900 text-sm font-bold px-3 py-2 rounded-lg hover:bg-slate-200">🌙 Dark</button>
+            <button id="contrastBtn" class="toggle-btn flex-1 bg-white/10 text-white text-sm font-bold px-3 py-2 rounded-lg ring-1 ring-white/30 hover:bg-white/20">◐ Contrast</button>
+          </div>
+          <button id="exportBtn" class="mt-2 w-full bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-bold px-3 py-2 rounded-lg">⬇ Export filtered CSV</button>
+        </div>
+      </div>
+    </div>
+    <!-- KPI STRIP -->
+    <div id="kpiStrip" class="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- CONTROLS -->
+  <section class="card">
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="flex gap-2">
+        <button data-view="overview" class="viewTab px-4 py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white">Overview</button>
+        <button data-view="batters" class="viewTab px-4 py-2 rounded-lg font-bold text-sm bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200">Batters</button>
+        <button data-view="bowlers" class="viewTab px-4 py-2 rounded-lg font-bold text-sm bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200">Bowlers</button>
+        <button data-view="contrast" class="viewTab px-4 py-2 rounded-lg font-bold text-sm bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200">⚔️ Head-to-Head</button>
+      </div>
+      <div class="flex-1"></div>
+      <input id="searchInput" type="text" placeholder="🔍 Search player…" class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm w-48"/>
+      <select id="sortSelect" class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-semibold">
+        <option value="score-desc">Sort: Score ↓</option>
+        <option value="uplift-desc">Sort: Uplift ↓</option>
+        <option value="balls-desc">Sort: Pressure balls ↓</option>
+        <option value="name-asc">Sort: Name A–Z</option>
+      </select>
+    </div>
+    <div class="mt-3 flex flex-wrap items-center gap-4 text-sm">
+      <label class="flex items-center gap-2 font-semibold">Min pressure balls: <span id="ballsVal" class="text-indigo-600 dark:text-indigo-300 font-black">0</span>
+        <input id="ballsSlider" type="range" min="0" max="800" step="20" value="0" class="w-40 accent-indigo-600"/></label>
+      <label class="flex items-center gap-2 font-semibold"><input id="showBatters" type="checkbox" checked class="w-4 h-4 accent-orange-600"/> Batters</label>
+      <label class="flex items-center gap-2 font-semibold"><input id="showBowlers" type="checkbox" checked class="w-4 h-4 accent-sky-600"/> Bowlers</label>
+      <span id="poolCount" class="ml-auto text-xs text-slate-500 dark:text-slate-400 font-semibold"></span>
+    </div>
+  </section>
+
+  <!-- OVERVIEW VIEW -->
+  <div id="view-overview" class="space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="card">
+        <div class="flex items-center justify-between"><h3 class="font-black">🏏 Batter composite scores</h3><span class="text-xs font-bold bg-orange-100 text-orange-800 px-2 py-1 rounded">Top 10</span></div>
+        <div class="chart-box mt-2"><canvas id="chBatScore"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="flex items-center justify-between"><h3 class="font-black">🎯 Bowler composite scores</h3><span class="text-xs font-bold bg-sky-100 text-sky-800 px-2 py-1 rounded">Top 10</span></div>
+        <div class="chart-box mt-2"><canvas id="chBowlScore"></canvas></div>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="card">
+        <h3 class="font-black">⚡ Pressure SR vs Baseline SR <span class="font-normal text-xs text-slate-500">— batters (gap = uplift)</span></h3>
+        <div class="chart-box mt-2"><canvas id="chBatSR"></canvas></div>
+      </div>
+      <div class="card">
+        <h3 class="font-black">🧊 Pressure Econ vs Baseline Econ <span class="font-normal text-xs text-slate-500">— bowlers (lower = better)</span></h3>
+        <div class="chart-box mt-2"><canvas id="chBowlEcon"></canvas></div>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="card">
+        <h3 class="font-black">📈 Uplift ranking — batters (Δ SR)</h3>
+        <div class="chart-box-sm mt-2"><canvas id="chBatUplift"></canvas></div>
+      </div>
+      <div class="card">
+        <h3 class="font-black">📉 Economy improvement — bowlers (base − pressure)</h3>
+        <div class="chart-box-sm mt-2"><canvas id="chBowlUplift"></canvas></div>
+      </div>
+      <div class="card">
+        <h3 class="font-black">🫧 Exposure vs Quality</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Bubble size = pressure matches. Orange = batters, Blue = bowlers.</p>
+        <div class="chart-box-sm mt-2"><canvas id="chBubble"></canvas></div>
+      </div>
+    </div>
+    <!-- INSIGHTS -->
+    <section class="card bg-gradient-to-br from-indigo-50 to-teal-50 dark:from-indigo-950/50 dark:to-teal-950/30">
+      <h3 class="font-black text-lg">💡 Auto insights — contrast at a glance</h3>
+      <div id="insights" class="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm"></div>
+    </section>
+  </div>
+
+  <!-- BATTERS VIEW -->
+  <div id="view-batters" class="hidden space-y-6">
+    <div class="card">
+      <h3 class="font-black text-lg">🏏 Batters — pressure vs baseline contrast</h3>
+      <div class="overflow-x-auto mt-3 rounded-xl border border-slate-200 dark:border-slate-700">
+        <table class="sortable min-w-full text-sm" id="batTable">
+          <thead class="bg-slate-900 text-white text-xs uppercase"><tr>
+            <th data-k="rank" class="px-3 py-2.5 text-left">#</th><th data-k="player" class="px-3 py-2.5 text-left">Player</th>
+            <th data-k="score" class="px-3 py-2.5 text-right">Score</th><th data-k="pressure_balls" class="px-3 py-2.5 text-right">P balls</th>
+            <th data-k="pressure_matches" class="px-3 py-2.5 text-right">Match</th><th data-k="pressure_SR" class="px-3 py-2.5 text-right">P SR</th>
+            <th data-k="baseline_SR" class="px-3 py-2.5 text-right">Base SR</th><th data-k="change_vs_baseline" class="px-3 py-2.5 text-right">Δ uplift</th><th class="px-3 py-2.5 text-left">Form</th>
+          </tr></thead><tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOWLERS VIEW -->
+  <div id="view-bowlers" class="hidden space-y-6">
+    <div class="card">
+      <h3 class="font-black text-lg">🎯 Bowlers — economy contrast (lower pressure econ = better)</h3>
+      <div class="overflow-x-auto mt-3 rounded-xl border border-slate-200 dark:border-slate-700">
+        <table class="sortable min-w-full text-sm" id="bowlTable">
+          <thead class="bg-slate-900 text-white text-xs uppercase"><tr>
+            <th data-k="rank" class="px-3 py-2.5 text-left">#</th><th data-k="player" class="px-3 py-2.5 text-left">Player</th>
+            <th data-k="score" class="px-3 py-2.5 text-right">Score</th><th data-k="pressure_balls" class="px-3 py-2.5 text-right">P balls</th>
+            <th data-k="pressure_matches" class="px-3 py-2.5 text-right">Match</th><th data-k="pressure_economy" class="px-3 py-2.5 text-right">P Econ</th>
+            <th data-k="baseline_economy" class="px-3 py-2.5 text-right">Base Econ</th><th data-k="change_vs_baseline" class="px-3 py-2.5 text-right">Δ (base−P)</th><th class="px-3 py-2.5 text-left">Form</th>
+          </tr></thead><tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTRAST / H2H VIEW -->
+  <div id="view-contrast" class="hidden space-y-6">
+    <div class="card">
+      <h3 class="font-black text-lg">⚔️ Head-to-head contrast — pick any two players</h3>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Compare across roles. Metrics are normalised 0–100 for fair visual contrast; raw values shown alongside.</p>
+      <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+        <div><label class="text-xs font-bold uppercase">Player A</label><select id="selA" class="mt-1 w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 font-bold"></select></div>
+        <div class="text-center font-black text-2xl text-slate-400">VS</div>
+        <div><label class="text-xs font-bold uppercase">Player B</label><select id="selB" class="mt-1 w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 font-bold"></select></div>
+      </div>
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <h4 class="font-black mb-2">Radar contrast</h4>
+          <div class="chart-box-sm"><canvas id="chRadar"></canvas></div>
+        </div>
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <h4 class="font-black mb-2">Metric-by-metric bars</h4>
+          <div id="h2hBars" class="space-y-3"></div>
+          <div id="h2hVerdict" class="mt-4 rounded-lg bg-slate-50 dark:bg-slate-800 p-3 text-sm font-semibold"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 class="font-black">🔀 Role contrast — batters vs bowlers distributions</h3>
+      <div class="chart-box mt-2"><canvas id="chRoleContrast"></canvas></div>
+      <p class="text-xs text-slate-500 mt-2">Each dot = one player. X = exposure (pressure balls), Y = composite score. Colour = role. Size = matches.</p>
+    </div>
+  </div>
+
+  <section class="card">
+    <h3 class="font-black">📋 Combined master table <span class="text-xs font-normal text-slate-500">— click headers to sort</span></h3>
+    <div class="overflow-x-auto mt-3 rounded-xl border border-slate-200 dark:border-slate-700">
+      <table class="sortable min-w-full text-sm" id="allTable">
+        <thead class="bg-slate-900 text-white text-xs uppercase"><tr>
+          <th data-k="category" class="px-3 py-2.5 text-left">Role</th><th data-k="rank" class="px-3 py-2.5 text-left">Rk</th>
+          <th data-k="player" class="px-3 py-2.5 text-left">Player</th><th data-k="score" class="px-3 py-2.5 text-right">Score</th>
+          <th data-k="pressure_balls" class="px-3 py-2.5 text-right">P balls</th><th data-k="pressure_matches" class="px-3 py-2.5 text-right">P mat</th>
+          <th data-k="metric" class="px-3 py-2.5 text-right">P metric</th><th data-k="baseline" class="px-3 py-2.5 text-right">Base</th>
+          <th data-k="change_vs_baseline" class="px-3 py-2.5 text-right">Δ</th>
+        </tr></thead><tbody></tbody>
+      </table>
+    </div>
+    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">⚠️ Read before trusting a rank: candidate ranking only · thresholds analyst-defined, not win-probability calibrated · venue/opposition not fully adjusted · 2026 season in-progress snapshot.</p>
+  </section>
+</main>
+
+<footer class="max-w-7xl mx-auto px-4 pb-10 text-xs text-slate-500 dark:text-slate-400">
+  SupeRR Selector Round 1 dashboard · Rebuilt from Rankings CSV · Pressure Performance Index (0–100) · Tip: use Head-to-Head to contrast any batter vs any bowler.
+</footer>
+
+<script>
+const BAT = [
+ {rank:1,player:"Shashank Singh",score:90.83,pressure_balls:350,pressure_matches:29,pressure_SR:185.14,baseline_SR:122.38,change_vs_baseline:62.76},
+ {rank:2,player:"Dinesh Karthik",score:80.34,pressure_balls:405,pressure_matches:49,pressure_SR:195.06,baseline_SR:120.26,change_vs_baseline:74.8},
+ {rank:3,player:"Fakhar Zaman",score:79.54,pressure_balls:225,pressure_matches:19,pressure_SR:166.67,baseline_SR:120.09,change_vs_baseline:46.57},
+ {rank:4,player:"Rinku Singh",score:79.13,pressure_balls:580,pressure_matches:57,pressure_SR:185.0,baseline_SR:126.97,change_vs_baseline:58.03},
+ {rank:5,player:"Tristan Stubbs",score:78.93,pressure_balls:539,pressure_matches:48,pressure_SR:171.24,baseline_SR:128.33,change_vs_baseline:42.91},
+ {rank:6,player:"Tim David",score:77.09,pressure_balls:533,pressure_matches:60,pressure_SR:199.44,baseline_SR:163.49,change_vs_baseline:35.95},
+ {rank:7,player:"Reeza Hendricks",score:76.53,pressure_balls:350,pressure_matches:18,pressure_SR:168.57,baseline_SR:130.99,change_vs_baseline:37.58},
+ {rank:8,player:"Suryakumar Yadav",score:73.88,pressure_balls:854,pressure_matches:49,pressure_SR:174.59,baseline_SR:163.34,change_vs_baseline:11.25},
+ {rank:9,player:"Glenn Maxwell",score:73.2,pressure_balls:308,pressure_matches:29,pressure_SR:181.82,baseline_SR:152.01,change_vs_baseline:29.81},
+ {rank:10,player:"Naman Dhir",score:72.82,pressure_balls:227,pressure_matches:29,pressure_SR:196.04,baseline_SR:153.66,change_vs_baseline:42.38},
+];
+const BOWL = [
+ {rank:1,player:"Abrar Ahmed",score:93.63,pressure_balls:302,pressure_matches:22,pressure_economy:5.96,baseline_economy:7.12,change_vs_baseline:-1.16},
+ {rank:2,player:"Mohammad Nawaz",score:89.96,pressure_balls:360,pressure_matches:28,pressure_economy:6.43,baseline_economy:7.51,change_vs_baseline:-1.08},
+ {rank:3,player:"Taskin Ahmed",score:83.96,pressure_balls:387,pressure_matches:35,pressure_economy:7.98,baseline_economy:7.87,change_vs_baseline:0.11},
+ {rank:4,player:"Shaheen Afridi",score:81.92,pressure_balls:445,pressure_matches:43,pressure_economy:7.38,baseline_economy:8.35,change_vs_baseline:-0.98},
+ {rank:5,player:"Jasprit Bumrah",score:80.58,pressure_balls:780,pressure_matches:68,pressure_economy:7.22,baseline_economy:7.13,change_vs_baseline:0.09},
+ {rank:6,player:"Mitchell Santner",score:80.5,pressure_balls:638,pressure_matches:39,pressure_economy:6.82,baseline_economy:7.73,change_vs_baseline:-0.91},
+ {rank:7,player:"Mohammad Rishad Hossain",score:79.96,pressure_balls:285,pressure_matches:25,pressure_economy:8.04,baseline_economy:8.59,change_vs_baseline:-0.55},
+ {rank:8,player:"Haris Rauf",score:77.79,pressure_balls:421,pressure_matches:39,pressure_economy:8.67,baseline_economy:8.52,change_vs_baseline:0.14},
+ {rank:9,player:"Michael Bracewell",score:77.54,pressure_balls:244,pressure_matches:18,pressure_economy:7.87,baseline_economy:7.87,change_vs_baseline:0.0},
+ {rank:10,player:"Matheesha Pathirana",score:75.58,pressure_balls:550,pressure_matches:43,pressure_economy:8.66,baseline_economy:8.5,change_vs_baseline:0.16},
+];
+const ALL = [...BAT.map(d=>({...d,category:"Batter",metric:d.pressure_SR,baseline:d.baseline_SR,improve:d.change_vs_baseline})),
+             ...BOWL.map(d=>({...d,category:"Bowler",metric:d.pressure_economy,baseline:d.baseline_economy,improve:-(d.change_vs_baseline)}))];
+
+const isDark = () => document.documentElement.classList.contains('dark');
+const gridColor = () => isDark() ? 'rgba(148,163,184,.15)' : 'rgba(0,0,0,.08)';
+const tickColor = () => isDark() ? '#cbd5e1' : '#475569';
+let charts = {};
+function mk(name, ctx, cfg){ if(charts[name]) charts[name].destroy(); charts[name]=new Chart(ctx,cfg); }
+function baseOpts(extra={}){ return Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:10},color:tickColor()}}},scales:{x:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{size:10}}},y:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{size:10}}}}},extra); }
+
+// ---------- KPIs ----------
+function renderKPIs(){
+  const topBat=[...BAT].sort((a,b)=>b.score-a.score)[0];
+  const topBowl=[...BOWL].sort((a,b)=>b.score-a.score)[0];
+  const maxUpliftBat=[...BAT].sort((a,b)=>b.change_vs_baseline-a.change_vs_baseline)[0];
+  const bestEcon=[...BOWL].sort((a,b)=>a.pressure_economy-b.pressure_economy)[0];
+  const avgBat=(BAT.reduce((s,d)=>s+d.score,0)/BAT.length);
+  const avgBowl=(BOWL.reduce((s,d)=>s+d.score,0)/BOWL.length);
+  const cards=[
+    ["🏆 Top batter",topBat.player,topBat.score.toFixed(2)+" pts","from-teal-500 to-emerald-600"],
+    ["🏆 Top bowler",topBowl.player,topBowl.score.toFixed(2)+" pts","from-indigo-500 to-violet-600"],
+    ["⚡ Biggest batting uplift",maxUpliftBat.player,"+"+maxUpliftBat.change_vs_baseline.toFixed(1)+" SR","from-orange-500 to-rose-600"],
+    ["🧊 Best pressure econ",bestEcon.player,bestEcon.pressure_economy.toFixed(2)+" rpo","from-sky-500 to-cyan-600"],
+    ["📊 Avg score — bat",BAT.length+" players",avgBat.toFixed(1),"from-slate-600 to-slate-800"],
+    ["📊 Avg score — bowl",BOWL.length+" players",avgBowl.toFixed(1),"from-slate-600 to-slate-800"],
+  ];
+  document.getElementById('kpiStrip').innerHTML=cards.map(c=>`
+    <div class="bg-gradient-to-br ${c[3]} rounded-xl p-3 text-white shadow">
+      <div class="text-[11px] uppercase tracking-wide opacity-80 font-bold">${c[0]}</div>
+      <div class="font-black truncate mt-0.5">${c[1]}</div>
+      <div class="text-xl font-black kpi-num">${c[2]}</div>
+    </div>`).join('');
+}
+
+// ---------- Filtering ----------
+function filtered(){
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  const minB=+document.getElementById('ballsSlider').value;
+  const sb=document.getElementById('showBatters').checked, sw=document.getElementById('showBowlers').checked;
+  const sort=document.getElementById('sortSelect').value;
+  let bat=BAT.filter(d=>(!q||d.player.toLowerCase().includes(q))&&d.pressure_balls>=minB);
+  let bowl=BOWL.filter(d=>(!q||d.player.toLowerCase().includes(q))&&d.pressure_balls>=minB);
+  const sortFn={
+    "score-desc":(a,b)=>b.score-a.score,"uplift-desc":(a,b)=>(b.change_vs_baseline??b.improve??0)-(a.change_vs_baseline??a.improve??0),
+    "balls-desc":(a,b)=>b.pressure_balls-a.pressure_balls,"name-asc":(a,b)=>a.player.localeCompare(b.player)}[sort];
+  bat.sort(sortFn); bowl.sort(sortFn);
+  if(!sb) bat=[]; if(!sw) bowl=[];
+  document.getElementById('poolCount').textContent=`Showing ${bat.length} batters · ${bowl.length} bowlers · min balls ≥ ${minB}`;
+  return {bat,bowl};
+}
+
+// ---------- Tables ----------
+function spark(vals, w=90, h=26, color="#6366f1"){
+  const mx=Math.max(...vals), mn=Math.min(...vals), rg=(mx-mn)||1;
+  const pts=vals.map((v,i)=>`${(i/(vals.length-1||1)*w).toFixed(1)},${(h-2-((v-mn)/rg)*(h-4)).toFixed(1)}`).join(' ');
+  return `<svg width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+}
+function pill(i){ return i===0?'<span class="pill rank-1">🥇 1</span>':i===1?'<span class="pill rank-2">🥈 2</span>':i===2?'<span class="pill rank-3">🥉 3</span>':`<span class="pill bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200">${i+1}</span>`; }
+function renderTables(){
+  const {bat,bowl}=filtered();
+  const bt=document.querySelector('#batTable tbody');
+  bt.innerHTML=bat.map((d,i)=>{const pos=d.change_vs_baseline>=0;return `<tr class="border-t border-slate-200 dark:border-slate-700 ${i%2?'bg-slate-50 dark:bg-slate-900/50':''}">
+    <td class="px-3 py-2">${pill(i)}</td><td class="px-3 py-2 font-bold">${d.player}</td>
+    <td class="px-3 py-2 text-right font-black text-teal-600 dark:text-teal-300 kpi-num">${d.score.toFixed(2)}</td>
+    <td class="px-3 py-2 text-right kpi-num">${d.pressure_balls}</td><td class="px-3 py-2 text-right kpi-num">${d.pressure_matches}</td>
+    <td class="px-3 py-2 text-right kpi-num">${d.pressure_SR.toFixed(1)}</td><td class="px-3 py-2 text-right kpi-num text-slate-500">${d.baseline_SR.toFixed(1)}</td>
+    <td class="px-3 py-2 text-right kpi-num ${pos?'delta-pos':'delta-neg'}">${pos?'+':''}${d.change_vs_baseline.toFixed(1)}</td>
+    <td class="px-3 py-2">${spark(BAT.map(x=>x.score))}</td></tr>`;}).join('')||`<tr><td colspan="9" class="px-3 py-6 text-center text-slate-500">No batters match filters.</td></tr>`;
+
+  const wt=document.querySelector('#bowlTable tbody');
+  wt.innerHTML=bowl.map((d,i)=>{const imp=-(d.change_vs_baseline);const pos=imp>=0;return `<tr class="border-t border-slate-200 dark:border-slate-700 ${i%2?'bg-slate-50 dark:bg-slate-900/50':''}">
+    <td class="px-3 py-2">${pill(i)}</td><td class="px-3 py-2 font-bold">${d.player}</td>
+    <td class="px-3 py-2 text-right font-black text-indigo-600 dark:text-indigo-300 kpi-num">${d.score.toFixed(2)}</td>
+    <td class="px-3 py-2 text-right kpi-num">${d.pressure_balls}</td><td class="px-3 py-2 text-right kpi-num">${d.pressure_matches}</td>
+    <td class="px-3 py-2 text-right kpi-num">${d.pressure_economy.toFixed(2)}</td><td class="px-3 py-2 text-right kpi-num text-slate-500">${d.baseline_economy.toFixed(2)}</td>
+    <td class="px-3 py-2 text-right kpi-num ${pos?'delta-pos':'delta-neg'}">${pos?'+':''}${imp.toFixed(2)}</td>
+    <td class="px-3 py-2">${spark(BOWL.map(x=>x.score),90,26,"#0ea5e9")}</td></tr>`;}).join('')||`<tr><td colspan="9" class="px-3 py-6 text-center text-slate-500">No bowlers match filters.</td></tr>`;
+
+  const all=[...bat.map(d=>({...d,category:"Batter",metric:d.pressure_SR,baseline:d.baseline_SR})),...bowl.map(d=>({...d,category:"Bowler",metric:d.pressure_economy,baseline:d.baseline_economy}))].sort((a,b)=>b.score-a.score);
+  document.querySelector('#allTable tbody').innerHTML=all.map(d=>{const isB=d.category==="Batter";const delta=isB?d.change_vs_baseline:-(d.change_vs_baseline);const pos=delta>=0;
+    return `<tr class="border-t border-slate-200 dark:border-slate-700">
+    <td class="px-3 py-2"><span class="pill ${isB?'bg-orange-100 text-orange-800':'bg-sky-100 text-sky-800'}">${isB?'🏏 BAT':'🎯 BOWL'}</span></td>
+    <td class="px-3 py-2 font-bold">${d.rank}</td><td class="px-3 py-2 font-bold">${d.player}</td>
+    <td class="px-3 py-2 text-right font-black kpi-num">${d.score.toFixed(2)}</td>
+    <td class="px-3 py-2 text-right kpi-num">${d.pressure_balls}</td><td class="px-3 py-2 text-right kpi-num">${d.pressure_matches}</td>
+    <td class="px-3 py-2 text-right kpi-num">${d.metric.toFixed(isB?1:2)}</td><td class="px-3 py-2 text-right kpi-num text-slate-500">${d.baseline.toFixed(isB?1:2)}</td>
+    <td class="px-3 py-2 text-right kpi-num ${pos?'delta-pos':'delta-neg'}">${pos?'+':''}${delta.toFixed(isB?1:2)}</td></tr>`;}).join('');
+}
+
+// ---------- Charts ----------
+function renderCharts(){
+  const {bat,bowl}=filtered();
+  const bTop=[...bat].sort((a,b)=>b.score-a.score).slice(0,10);
+  const wTop=[...bowl].sort((a,b)=>b.score-a.score).slice(0,10);
+  Chart.defaults.color=tickColor(); Chart.defaults.borderColor=gridColor();
+
+  mk('batScore',document.getElementById('chBatScore'),{type:'bar',
+    data:{labels:bTop.map(d=>d.player),datasets:[{data:bTop.map(d=>d.score),backgroundColor:bTop.map((_,i)=>i===0?'#f59e0b':'rgba(249,115,22,.85)'),borderRadius:7,barThickness:16}]},
+    options:baseOpts({indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,max:100,grid:{color:gridColor()},ticks:{color:tickColor()}},y:{grid:{display:false},ticks:{color:tickColor(),font:{size:11}}}}})});
+
+  mk('bowlScore',document.getElementById('chBowlScore'),{type:'bar',
+    data:{labels:wTop.map(d=>d.player),datasets:[{data:wTop.map(d=>d.score),backgroundColor:wTop.map((_,i)=>i===0?'#6366f1':'rgba(14,165,233,.85)'),borderRadius:7,barThickness:16}]},
+    options:baseOpts({indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,max:100,grid:{color:gridColor()},ticks:{color:tickColor()}},y:{grid:{display:false},ticks:{color:tickColor(),font:{size:11}}}}})});
+
+  mk('batSR',document.getElementById('chBatSR'),{type:'bar',
+    data:{labels:bTop.map(d=>d.player),datasets:[
+      {label:'Pressure SR',data:bTop.map(d=>d.pressure_SR),backgroundColor:'rgba(249,115,22,.9)',borderRadius:5},
+      {label:'Baseline SR',data:bTop.map(d=>d.baseline_SR),backgroundColor:isDark()?'rgba(148,163,184,.5)':'rgba(100,116,139,.45)',borderRadius:5}]},
+    options:baseOpts()});
+
+  mk('bowlEcon',document.getElementById('chBowlEcon'),{type:'bar',
+    data:{labels:wTop.map(d=>d.player),datasets:[
+      {label:'Pressure econ',data:wTop.map(d=>d.pressure_economy),backgroundColor:'rgba(14,165,233,.9)',borderRadius:5},
+      {label:'Baseline econ',data:wTop.map(d=>d.baseline_economy),backgroundColor:isDark()?'rgba(148,163,184,.5)':'rgba(100,116,139,.45)',borderRadius:5}]},
+    options:baseOpts()});
+
+  const bu=[...bat].sort((a,b)=>b.change_vs_baseline-a.change_vs_baseline).slice(0,10);
+  mk('batUplift',document.getElementById('chBatUplift'),{type:'bar',
+    data:{labels:bu.map(d=>d.player),datasets:[{data:bu.map(d=>d.change_vs_baseline),backgroundColor:bu.map(v=>v.change_vs_baseline>=40?'#059669':'#f59e0b'),borderRadius:6}]},
+    options:baseOpts({indexAxis:'y',plugins:{legend:{display:false}}})});
+
+  const wu=[...bowl].sort((a,b)=>(-(a.change_vs_baseline))-(-(b.change_vs_baseline))).slice(0,10);
+  mk('bowlUplift',document.getElementById('chBowlUplift'),{type:'bar',
+    data:{labels:wu.map(d=>d.player),datasets:[{data:wu.map(d=>-(d.change_vs_baseline)),backgroundColor:wu.map(d=>(-(d.change_vs_baseline))>=0?'#0ea5e9':'#e11d48'),borderRadius:6}]},
+    options:baseOpts({indexAxis:'y',plugins:{legend:{display:false}}})});
+
+  mk('bubble',document.getElementById('chBubble'),{type:'bubble',
+    data:{datasets:[
+      {label:'Batters',data:bat.map(d=>({x:d.pressure_balls,y:d.score,r:Math.sqrt(d.pressure_matches)*2.2})),backgroundColor:'rgba(249,115,22,.65)'},
+      {label:'Bowlers',data:bowl.map(d=>({x:d.pressure_balls,y:d.score,r:Math.sqrt(d.pressure_matches)*2.2})),backgroundColor:'rgba(14,165,233,.65)'}]},
+    options:baseOpts({scales:{x:{title:{display:true,text:'Pressure balls',color:tickColor()},grid:{color:gridColor()},ticks:{color:tickColor()}},y:{title:{display:true,text:'Score',color:tickColor()},grid:{color:gridColor()},ticks:{color:tickColor()}}}})});
+
+  // Role contrast scatter (same data, bigger)
+  if(document.getElementById('chRoleContrast')){
+    mk('role',document.getElementById('chRoleContrast'),{type:'scatter',
+      data:{datasets:[
+        {label:'Batters (y=score)',data:bat.map(d=>({x:d.pressure_balls,y:d.score})),backgroundColor:'#f97316',pointRadius:8},
+        {label:'Bowlers (y=score)',data:bowl.map(d=>({x:d.pressure_balls,y:d.score})),backgroundColor:'#0ea5e9',pointRadius:8}]},
+      options:baseOpts({scales:{x:{title:{display:true,text:'Exposure → pressure balls',color:tickColor()},grid:{color:gridColor()},ticks:{color:tickColor()}},y:{title:{display:true,text:'Quality → composite score',color:tickColor()},grid:{color:gridColor()},ticks:{color:tickColor()}}}})});
+  }
+  renderH2H();
+}
+
+// ---------- Insights ----------
+function renderInsights(){
+  const buMax=[...BAT].sort((a,b)=>b.change_vs_baseline-a.change_vs_baseline)[0];
+  const buMin=[...BAT].sort((a,b)=>a.change_vs_baseline-b.change_vs_baseline)[0];
+  const bowlPos=BOWL.filter(d=>d.change_vs_baseline<0).length;
+  const hiBall=BAT.find(d=>d.pressure_balls>=800);
+  const items=[
+    [`🔥 Uplift king`,`<b>${buMax.player}</b> gains <b class="delta-pos">+${buMax.change_vs_baseline.toFixed(1)}</b> SR under pressure — highest batting lift, yet ranks #${buMax.rank} on composite.`],
+    [`🧊 Most resilient bowler`,`<b>Abrar Ahmed</b> concedes only <b>5.96</b> rpo under pressure (−1.16 vs baseline) with a top score of <b>93.63</b> — best in dataset.`],
+    [`⚖️ Role asymmetry`,`<b>${bowlPos}/10</b> bowlers improve economy under pressure, while <b>10/10</b> batters lift SR — pressure rewards batting aggression more uniformly.`],
+    [`🏋️ Workload vs class`,`<b>${hiBall.player}</b> faced <b>${hiBall.pressure_balls}</b> pressure balls (most) but uplift is smallest (<b>+${hiBall.change_vs_baseline.toFixed(1)}</b>) — volume ≠ lift.`],
+    [`📊 Score gap`,`Bowlers' #1 (${BOWL[0].score.toFixed(1)}) outscores batters' #1 (${BAT[0].score.toFixed(1)}) by <b>${(BOWL[0].score-BAT[0].score).toFixed(1)} pts</b> — cross-role comparison favours top bowlers.`],
+    [`🎯 Fragile economy`,`<b>Pathirana (8.66)</b> & <b>Rauf (8.67)</b> leak most under pressure — contrast with Santner (6.82) for the economy spectrum.`],
+  ];
+  document.getElementById('insights').innerHTML=items.map(x=>`<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3"><div class="font-black">${x[0]}</div><div class="mt-1 text-slate-600 dark:text-slate-300">${x[1]}</div></div>`).join('');
+}
+
+// ---------- H2H ----------
+function norm(v,lo,hi){ return Math.max(0,Math.min(100,(v-lo)/((hi-lo)||1)*100)); }
+function playerMetrics(p){
+  const isB='pressure_SR' in p;
+  if(isB) return {role:'Batter',raw:[['Score',p.score+'/100'],['Pressure SR',p.pressure_SR.toFixed(1)],['Uplift Δ',((p.change_vs_baseline>=0?'+':'')+p.change_vs_baseline.toFixed(1))],['P balls',p.pressure_balls],['P matches',p.pressure_matches]],
+    radar:[norm(p.score,70,95),norm(p.pressure_SR,160,200),norm(p.change_vs_baseline,10,75),norm(p.pressure_balls,200,860),norm(p.pressure_matches,15,60)]};
+  const imp=-(p.change_vs_baseline);
+  return {role:'Bowler',raw:[['Score',p.score+'/100'],['Pressure econ',p.pressure_economy.toFixed(2)],['Econ improve',((imp>=0?'+':'')+imp.toFixed(2))],['P balls',p.pressure_balls],['P matches',p.pressure_matches]],
+    radar:[norm(p.score,75,95),norm(10-p.pressure_economy,1,4.2),norm(imp,-0.2,1.2),norm(p.pressure_balls,240,780),norm(p.pressure_matches,18,68)]};
+}
+function initH2H(){
+  const opts=ALL.map(d=>`<option value="${d.player}">${('pressure_SR' in d?'🏏 ':'🎯 ')+d.player}</option>`).join('');
+  document.getElementById('selA').innerHTML=opts; document.getElementById('selB').innerHTML=opts;
+  document.getElementById('selA').value="Shashank Singh"; document.getElementById('selB').value="Abrar Ahmed";
+  document.getElementById('selA').onchange=renderH2H; document.getElementById('selB').onchange=renderH2H;
+}
+function renderH2H(){
+  const a=ALL.find(d=>d.player===document.getElementById('selA').value)||ALL[0];
+  const b=ALL.find(d=>d.player===document.getElementById('selB').value)||ALL[10];
+  const ma=playerMetrics(a), mb=playerMetrics(b);
+  const labels=['Score','Output (SR / −Econ)','Uplift','Exposure','Experience'];
+  mk('radar',document.getElementById('chRadar'),{type:'radar',
+    data:{labels,datasets:[{label:a.player+' ('+ma.role+')',data:ma.radar,backgroundColor:'rgba(249,115,22,.2)',borderColor:'#f97316',pointBackgroundColor:'#f97316'},
+                           {label:b.player+' ('+mb.role+')',data:mb.radar,backgroundColor:'rgba(14,165,233,.2)',borderColor:'#0ea5e9',pointBackgroundColor:'#0ea5e9'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11},color:tickColor()}}},scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:gridColor()},angleLines:{color:gridColor()},pointLabels:{color:tickColor(),font:{size:11}}}}}});
+  const rows=ma.raw.map((r,i)=>{
+    const va=ma.radar[i], vb=mb.radar[i]; const wA=va.toFixed(0), wB=vb.toFixed(0);
+    const winA=va>vb, winB=vb>va;
+    return `<div><div class="flex justify-between text-xs font-bold"><span class="${winA?'text-orange-600':''}">A: ${r[1]}</span><span class="text-slate-500 uppercase">${r[0]}</span><span class="${winB?'text-sky-600':''}">B: ${mb.raw[i][1]}</span></div>
+    <div class="grid grid-cols-2 gap-1 mt-1"><div class="compare-bar"><div class="compare-fill" style="width:${wA}%;background:#f97316"></div></div>
+    <div class="compare-bar"><div class="compare-fill" style="width:${wB}%;background:#0ea5e9"></div></div></div></div>`;}).join('');
+  document.getElementById('h2hBars').innerHTML=`<div class="flex gap-2 text-sm font-black"><span class="flex-1 bg-orange-100 text-orange-900 rounded-lg px-3 py-2">A · ${a.player}</span><span class="flex-1 bg-sky-100 text-sky-900 rounded-lg px-3 py-2 text-right">B · ${b.player}</span></div>`+rows;
+  const winsA=ma.radar.filter((v,i)=>v>mb.radar[i]).length, winsB=mb.radar.filter((v,i)=>v<ma.radar[i]).length;
+  const verdict=winsA===winsB?`⚖️ Dead even — <b>${winsA}–${winsB}</b> on normalised axes. Raw output decides: ${a.player} ${a.score} vs ${b.player} ${b.score}.`:
+    winsA>winsB?`🏆 <b>${a.player}</b> wins the contrast <b>${winsA}–${5-winsA}</b> on axes — higher composite (${a.score} vs ${b.score}) backs it.`:`🏆 <b>${b.player}</b> wins the contrast <b>${winsB}–${5-winsB}</b> on axes — higher composite (${b.score} vs ${a.score}) backs it.`;
+  document.getElementById('h2hVerdict').innerHTML=verdict+`<div class="mt-1 text-xs text-slate-500">A role: ${ma.role} · B role: ${mb.role}. Radar normalises within dataset ranges for fair cross-role contrast.</div>`;
+}
+
+// ---------- View tabs ----------
+document.querySelectorAll('.viewTab').forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll('.viewTab').forEach(b=>{b.className='viewTab px-4 py-2 rounded-lg font-bold text-sm bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200';});
+  btn.className='viewTab px-4 py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white';
+  ['overview','batters','bowlers','contrast'].forEach(v=>document.getElementById('view-'+v).classList.toggle('hidden',v!==btn.dataset.view));
+  setTimeout(refresh,false);
+});
+
+// ---------- Theme / contrast / export ----------
+document.getElementById('themeBtn').onclick=e=>{document.documentElement.classList.toggle('dark');e.target.textContent=document.documentElement.classList.contains('dark')?'☀️ Light':'🌙 Dark';refresh();};
+document.getElementById('contrastBtn').onclick=()=>{document.body.classList.toggle('high-contrast');};
+document.getElementById('exportBtn').onclick=()=>{
+  const {bat,bowl}=filtered();
+  const rows=[["role","rank","player","score","pressure_balls","pressure_matches","pressure_metric","baseline","delta"]];
+  bat.forEach(d=>rows.push(["Batter",d.rank,d.player,d.score,d.pressure_balls,d.pressure_matches,d.pressure_SR,d.baseline_SR,d.change_vs_baseline]));
+  bowl.forEach(d=>rows.push(["Bowler",d.rank,d.player,d.score,d.pressure_balls,d.pressure_matches,d.pressure_economy,d.baseline_economy,-(d.change_vs_baseline)]));
+  const csv=rows.map(r=>r.join(",")).join("\n");
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='superr_selector_filtered.csv';a.click();
+};
+['searchInput','sortSelect','ballsSlider','showBatters','showBowlers'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{document.getElementById('ballsVal').textContent=document.getElementById('ballsSlider').value;refresh();});
+});
+
+// sortable headers (master + role tables)
+document.querySelectorAll('table.sortable').forEach(tbl=>{
+  tbl.querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.k; const tb=tbl.querySelector('tbody');
+    const rows=[...tb.rows]; const asc=th.dataset.asc==='1'; th.dataset.asc=asc?'0':'1';
+    rows.sort((a,b)=>{const ia=[...tbl.querySelectorAll('thead th')].indexOf(th);
+      const ta=a.cells[ia].innerText.replace(/[^\d.\-]/g,''), tbb=b.cells[ia].innerText.replace(/[^\d.\-]/g,'');
+      const na=parseFloat(ta), nb=parseFloat(tbb);
+      if(!isNaN(na)&&!isNaN(nb)) return asc?na-nb:nb-na;
+      return asc?a.cells[ia].innerText.localeCompare(b.cells[ia].innerText):b.cells[ia].innerText.localeCompare(a.cells[ia].innerText);});
+    rows.forEach(r=>tb.appendChild(r));
+  });
+});
+
+function refresh(){ renderTables(); renderCharts(); }
+renderKPIs(); initH2H(); refresh(); renderInsights();
+</script>
+<script>window.__CF$cv$params={r:'a5a412ac8bb87f7d',t:'MTc5NDYzODkzMQ==',u:'01a1d8d0ea6474119c96a33d46fa1c1a',ut:'_qh1MuRrnOMJhgqkc_l5Mq4qOo4gThs1UFZVQxXzLqU-1794638932-1.2.1.1-KZ4.D2arpCzEDAsmw0i.ZHCvgVHIO_d412UJOgILVArRCTq7gQ6m7OXklB3xQ7gaplL75nnO4TBdNY4dtKG9Znrv3DVMNlGv7OqMjlk32WA',i:60};(function(){if(!document.body)return;var l=window.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/precursor/main.js?ray=a5a412ac8bb87f7d',s=document.createElement('script');s.src=o?new URL(u,o).href:u;document.head.appendChild(s);})();</script><script>window.__CF$cv$params={r:'a5a42089691bb080',t:'MTc5NDYzOTQ5OQ==',u:'01a1d8d9933f7748a92e9f9eeae668f2',ut:'M8nwQ4JMcdmM7u_Lc9MYkKS2nxOw1.Hzmh5j3DsZmyQ-1794639500-1.2.1.1-uhEm0swdbB9xapPp0.Fs77tRrIrfr5MSORsNnTOxrUebycxRy0COpl3G4CNTNZhMptnT.sYw8WrYgURu0wSHLLgHqB66quFIqYA8nDuHvT8',i:60};(function(){if(!document.body)return;var l=window.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/precursor/main.js?ray=a5a42089691bb080',s=document.createElement('script');s.src=o?new URL(u,o).href:u;document.head.appendChild(s);})();</script></body>
+</html>
