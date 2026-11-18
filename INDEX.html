@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1020">
+<title>SupeRR Selector | Pressure Intelligence</title>
+<style>
+:root{
+ --bg:#080d19;--surface:#10182a;--surface2:#151f34;--surface3:#1b2941;--line:rgba(165,184,214,.15);
+ --text:#f4f7fc;--muted:#91a1ba;--muted2:#b7c4d7;--accent:#e85b9d;--accent2:#a78bfa;
+ --green:#60d6ad;--amber:#f2c36b;--red:#fb7185;--shadow:0 18px 50px rgba(0,0,0,.23);
+ --sidebar:246px;--radius:18px;
+}
+[data-theme="light"]{
+ --bg:#f2f5fa;--surface:#fff;--surface2:#f8faff;--surface3:#edf2fa;--line:rgba(53,76,112,.14);
+ --text:#172238;--muted:#64748b;--muted2:#43536b;--accent:#c82d79;--accent2:#7654d8;
+ --green:#138b68;--amber:#a66a0a;--red:#cf3f58;--shadow:0 15px 40px rgba(22,38,64,.08);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:
+ radial-gradient(900px 500px at 80% -12%,rgba(118,84,216,.13),transparent 60%),
+ radial-gradient(700px 450px at 20% 0%,rgba(232,91,157,.10),transparent 60%),var(--bg);
+ color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh}
+.sidebar{position:fixed;z-index:30;inset:0 auto 0 0;width:var(--sidebar);padding:22px 16px;background:rgba(9,15,29,.92);border-right:1px solid var(--line);backdrop-filter:blur(18px);display:flex;flex-direction:column}
+[data-theme="light"] .sidebar{background:rgba(255,255,255,.94)}
+.brand{display:flex;align-items:center;gap:11px;padding:2px 8px 27px}
+.brand-mark{width:39px;height:39px;border-radius:13px;background:linear-gradient(140deg,#e85b9d,#885cf5);display:grid;place-items:center;color:white;font-size:21px;font-weight:900;box-shadow:0 8px 25px rgba(232,91,157,.25)}
+.brand strong{display:block;font-size:14px;letter-spacing:.02em}
+.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.nav-label{padding:10px 11px 8px;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}
+.nav{display:grid;gap:5px}
+.nav button{width:100%;border:1px solid transparent;background:transparent;color:var(--muted2);text-align:left;padding:11px 12px;border-radius:11px;display:flex;align-items:center;gap:12px;font-weight:650;transition:.2s}
+.nav button:hover{background:var(--surface2);color:var(--text)}
+.nav button.active{color:var(--text);background:linear-gradient(100deg,rgba(232,91,157,.17),rgba(167,139,250,.10));border-color:rgba(232,91,157,.22)}
+.nav .ico{width:20px;text-align:center;font-size:16px}
+.sidebar-bottom{margin-top:auto}
+.data-badge{padding:13px;border:1px solid var(--line);background:var(--surface);border-radius:13px;color:var(--muted);font-size:11px}
+.data-badge strong{display:block;color:var(--green);font-size:11px;margin-bottom:5px}
+.main{margin-left:var(--sidebar);min-height:100vh}
+.topbar{height:70px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(8,13,25,.28);backdrop-filter:blur(12px);position:sticky;top:0;z-index:20}
+[data-theme="light"] .topbar{background:rgba(255,255,255,.7)}
+.crumb{color:var(--muted);font-size:12px}.crumb b{color:var(--text);font-weight:700}
+.top-actions{display:flex;gap:9px;align-items:center}
+.icon-btn,.soft-btn{border:1px solid var(--line);background:var(--surface);color:var(--muted2);border-radius:10px;padding:9px 12px}
+.soft-btn{font-size:12px;font-weight:700}
+.icon-btn:hover,.soft-btn:hover{border-color:var(--accent);color:var(--text)}
+.content{max-width:1500px;margin:auto;padding:30px 32px 48px}
+.page{display:none;animation:fade .25s ease}.page.active{display:block}
+@keyframes fade{from{opacity:.3;transform:translateY(5px)}to{opacity:1;transform:none}}
+.hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:25px}
+.eyebrow{font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:850;color:var(--accent)}
+h1{font-size:clamp(27px,3vw,38px);line-height:1.1;letter-spacing:-.04em;margin:8px 0 9px}
+h2{font-size:16px;letter-spacing:-.02em;margin:0}
+h3{font-size:13px;margin:0}
+.lead{color:var(--muted);max-width:710px;margin:0;font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(96,214,173,.25);background:rgba(96,214,173,.08);color:var(--green);padding:7px 10px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}
+.pulse{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 0 4px rgba(96,214,173,.10)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:22px 0}
+.kpi{position:relative;overflow:hidden;background:linear-gradient(145deg,var(--surface),var(--surface2));border:1px solid var(--line);border-radius:16px;padding:17px 18px;box-shadow:var(--shadow)}
+.kpi:after{content:"";position:absolute;width:90px;height:90px;border-radius:50%;right:-35px;top:-38px;background:var(--glow,rgba(232,91,157,.10));filter:blur(4px)}
+.kpi-label{font-size:11px;color:var(--muted);font-weight:650}
+.kpi-value{font-size:27px;font-weight:850;letter-spacing:-.04em;margin:5px 0 1px;font-variant-numeric:tabular-nums}
+.kpi-foot{font-size:10px;color:var(--muted)}
+.grid{display:grid;gap:15px}
+.grid.two{grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr)}
+.grid.equal{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card{min-width:0;background:linear-gradient(145deg,var(--surface),var(--surface2));border:1px solid var(--line);border-radius:var(--radius);padding:19px;box-shadow:var(--shadow)}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:15px}
+.card-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:10px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{height:7px;width:7px;border-radius:50%;background:var(--accent);display:inline-block}
+.dot.base{background:var(--accent2)}
+.leader-list{display:grid;gap:11px}
+.leader-row{display:grid;grid-template-columns:24px 1fr 46px;gap:10px;align-items:center}
+.rank{font-size:10px;color:var(--muted);font-weight:800}
+.leader-name{display:flex;justify-content:space-between;gap:12px;font-size:11px;margin-bottom:5px}
+.leader-name strong{font-weight:700}
+.leader-name span{font-variant-numeric:tabular-nums;color:var(--muted)}
+.track{height:7px;border-radius:20px;background:var(--surface3);overflow:hidden}
+.fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.fill.green{background:linear-gradient(90deg,#36b98c,#a2e6c8)}
+.value-score{text-align:right;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums}
+.insight{border:1px solid rgba(232,91,157,.19);background:linear-gradient(115deg,rgba(232,91,157,.09),rgba(167,139,250,.07));border-radius:14px;padding:15px}
+.insight small{font-size:10px;color:var(--accent);font-weight:850;text-transform:uppercase;letter-spacing:.13em}
+.insight strong{display:block;font-size:17px;margin:5px 0}
+.insight p{margin:0;color:var(--muted);font-size:11px}
+.metric-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}
+.metric-mini{background:var(--surface3);border-radius:11px;padding:11px}
+.metric-mini span{font-size:10px;color:var(--muted);display:block}
+.metric-mini strong{font-size:18px;display:block;margin-top:2px}
+.section-gap{margin-top:15px}
+.toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.field{background:var(--surface2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:9px 11px;outline:none}
+.field:focus{border-color:var(--accent)}
+.search{min-width:210px;flex:1}
+.range-wrap{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px}
+input[type=range]{accent-color:var(--accent);width:115px}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:11px}
+th{background:var(--surface3);color:var(--muted);text-align:right;padding:11px 12px;font-size:9px;text-transform:uppercase;letter-spacing:.09em}
+th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}
+td{text-align:right;padding:12px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer;transition:.15s}
+tbody tr:hover,tbody tr.selected{background:rgba(232,91,157,.07)}
+.player-cell{font-weight:750;color:var(--text)}
+.sub-cell{display:block;color:var(--muted);font-size:9px;font-weight:500}
+.score-chip{padding:4px 7px;border-radius:7px;background:rgba(232,91,157,.12);color:var(--accent);font-weight:850}
+.score-chip.bowler{background:rgba(96,214,173,.12);color:var(--green)}
+.profile{position:relative;overflow:hidden}
+.profile:before{content:"";position:absolute;right:-55px;top:-65px;width:160px;height:160px;border-radius:50%;background:rgba(232,91,157,.08);filter:blur(4px)}
+.profile-top{display:flex;gap:12px;align-items:center;position:relative}
+.avatar{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:900;color:white;font-size:17px}
+.profile-name{font-size:17px;font-weight:850}
+.profile-meta{font-size:10px;color:var(--muted)}
+.profile-score{margin-left:auto;text-align:right}
+.profile-score strong{font-size:23px;display:block}
+.profile-score span{font-size:9px;color:var(--muted)}
+.profile-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:17px}
+.stat{padding:11px;background:var(--surface3);border-radius:11px}
+.stat span{display:block;color:var(--muted);font-size:9px}
+.stat strong{font-size:16px;display:block;margin-top:3px}
+.delta.positive{color:var(--green)}.delta.negative{color:var(--red)}
+.chart-svg{width:100%;display:block;overflow:visible}
+.chart-area{margin-top:3px}
+.axis-label{fill:var(--muted);font-size:10px}
+.bar-label{fill:var(--text);font-size:11px}
+.compare-controls{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.compare-result{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.compare-player{padding:17px;border:1px solid var(--line);background:var(--surface2);border-radius:14px}
+.compare-player h3{font-size:15px;margin:5px 0}
+.compare-score{font-size:25px;font-weight:900;color:var(--accent)}
+.compare-metrics{display:grid;gap:8px;margin-top:13px}
+.compare-metric{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:8px;font-size:11px}
+.compare-metric span{color:var(--muted)}
+.method-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.method{padding:15px;border:1px solid var(--line);background:var(--surface2);border-radius:13px}
+.method b{display:block;font-size:12px;margin-bottom:6px}
+.method p{color:var(--muted);font-size:11px;margin:0}
+.method-number{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:8px;background:rgba(232,91,157,.12);color:var(--accent);font-size:10px;font-weight:900;margin-bottom:9px}
+.notice{border-left:3px solid var(--amber);background:rgba(242,195,107,.07);padding:12px 14px;border-radius:0 10px 10px 0;color:var(--muted);font-size:11px}
+.footer{padding:24px 4px 0;color:var(--muted);font-size:10px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mobile-menu{display:none}
+.empty{padding:25px;text-align:center;color:var(--muted)}
+@media(max-width:1050px){.grid.two{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+ :root{--sidebar:0px}.sidebar{width:260px;transform:translateX(-105%);transition:.25s;box-shadow:var(--shadow)}.sidebar.open{transform:translateX(0)}
+ .main{margin-left:0}.topbar{padding:0 16px;height:62px}.content{padding:22px 14px 35px}.mobile-menu{display:inline-flex}
+ .hero{align-items:flex-start;flex-direction:column}.kpis{gap:9px}.kpi{padding:13px}.kpi-value{font-size:22px}
+ .grid.equal,.method-grid{grid-template-columns:1fr}.compare-controls{grid-template-columns:1fr}.compare-result{grid-template-columns:1fr}
+ .profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+<body data-theme="dark">
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><div class="brand-mark">R</div><div><strong>SUPERR SELECTOR</strong><small>Pressure intelligence · S02</small></div></div>
+  <div class="nav-label">Workspace</div>
+  <nav class="nav">
+    <button class="active" data-page="overview"><span class="ico">◈</span> Overview</button>
+    <button data-page="batters"><span class="ico">🏏</span> Batter rankings</button>
+    <button data-page="bowlers"><span class="ico">◎</span> Bowler rankings</button>
+    <button data-page="compare"><span class="ico">⇄</span> Player comparison</button>
+    <button data-page="method"><span class="ico">⌘</span> Model & methodology</button>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="data-badge"><strong>● DATA SNAPSHOT LOADED</strong>Updated ball-by-ball file<br>IPL + T20I · 2022–2026</div>
+  </div>
+</aside>
+<div class="main">
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:11px"><button class="icon-btn mobile-menu" id="menuBtn" aria-label="Open menu">☰</button><div class="crumb">Analytics / <b id="crumb">Overview</b></div></div>
+    <div class="top-actions"><span class="pill"><i class="pulse"></i> Updated model</span><button class="icon-btn" id="themeBtn" title="Toggle theme">◐</button></div>
+  </header>
+  <main class="content">
+    <section class="page active" id="page-overview">
+      <div class="hero"><div><div class="eyebrow">Round 01 · Pressure performance model</div><h1>Pressure changes everything.</h1><p class="lead">A scouting workspace for identifying players who sustain performance when match conditions become difficult. Explore the shortlist, inspect the evidence and compare candidates.</p></div><span class="pill"><i class="pulse"></i> Snapshot · IPL + T20I</span></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="grid two">
+        <div class="card"><div class="card-head"><div><h2>Top pressure performers</h2><div class="card-sub">Composite model score · top five in each role</div></div><span class="pill">0–100 score</span></div><div class="grid equal"><div><div class="legend" style="margin-bottom:12px"><span><i class="dot"></i> Batters</span></div><div class="leader-list" id="topBatters"></div></div><div><div class="legend" style="margin-bottom:12px"><span><i class="dot base"></i> Bowlers</span></div><div class="leader-list" id="topBowlers"></div></div></div></div>
+        <div class="card"><div class="card-head"><div><h2>Scouting snapshot</h2><div class="card-sub">Leaders and model coverage</div></div></div><div id="scoutInsight"></div><div class="metric-pair"><div class="metric-mini"><span>Top batter score</span><strong id="topBatScore">—</strong></div><div class="metric-mini"><span>Top bowler score</span><strong id="topBowlScore">—</strong></div></div><div class="notice" style="margin-top:13px">Rankings shown here are the top-ten shortlists from the updated analysis, not a complete player database.</div></div>
+      </div>
+      <div class="grid equal section-gap">
+        <div class="card"><div class="card-head"><div><h2>Batting pressure output</h2><div class="card-sub">Pressure strike rate vs own baseline · top five</div></div></div><div id="batCompareChart" class="chart-area"></div><div class="legend"><span><i class="dot"></i> Pressure SR</span><span><i class="dot base"></i> Baseline SR</span></div></div>
+        <div class="card"><div class="card-head"><div><h2>Bowling pressure control</h2><div class="card-sub">Pressure economy vs own baseline · top five</div></div></div><div id="bowlCompareChart" class="chart-area"></div><div class="legend"><span><i class="dot"></i> Pressure economy</span><span><i class="dot base"></i> Baseline economy</span></div></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-batters">
+      <div class="hero"><div><div class="eyebrow">Role intelligence · 01</div><h1>Batter rankings</h1><p class="lead">Explore pressure strike rate, boundary frequency, dot-ball control, dismissal rate and improvement over each batter’s own baseline.</p></div><span class="pill">Minimum sample applied</span></div>
+      <div class="grid two">
+        <div class="card"><div class="card-head"><div><h2>Shortlist explorer</h2><div class="card-sub">Search, sort, filter and export selected results</div></div><button class="soft-btn" id="exportBat">↓ Export CSV</button></div><div class="toolbar" style="margin-bottom:13px"><input class="field search" id="batSearch" placeholder="Search batter name…"><select class="field" id="batSort"><option value="rank">Sort: Model rank</option><option value="score">Sort: Score ↓</option><option value="balls">Sort: Pressure balls ↓</option><option value="change">Sort: SR improvement ↓</option></select><label class="range-wrap">Min balls <input type="range" min="0" max="700" step="25" value="0" id="batMin"><b id="batMinVal">0</b></label></div><div class="table-wrap"><table id="batTable"></table></div></div>
+        <div class="card profile"><div class="card-head"><div><h2>Player intelligence card</h2><div class="card-sub">Select a row to inspect player evidence</div></div></div><div id="batProfile"></div></div>
+      </div>
+      <div class="card section-gap"><div class="card-head"><div><h2>Pressure scoring leaderboard</h2><div class="card-sub">Composite scores of the displayed top-ten list</div></div></div><div id="batLeaderboard"></div></div>
+    </section>
+
+    <section class="page" id="page-bowlers">
+      <div class="hero"><div><div class="eyebrow">Role intelligence · 02</div><h1>Bowler rankings</h1><p class="lead">Explore pressure economy, wickets per 100 legal pressure balls, dot-ball rate, boundary prevention and economy improvement.</p></div><span class="pill">Minimum sample applied</span></div>
+      <div class="grid two">
+        <div class="card"><div class="card-head"><div><h2>Shortlist explorer</h2><div class="card-sub">Search, sort, filter and export selected results</div></div><button class="soft-btn" id="exportBowl">↓ Export CSV</button></div><div class="toolbar" style="margin-bottom:13px"><input class="field search" id="bowlSearch" placeholder="Search bowler name…"><select class="field" id="bowlSort"><option value="rank">Sort: Model rank</option><option value="score">Sort: Score ↓</option><option value="balls">Sort: Pressure balls ↓</option><option value="change">Sort: Economy improvement ↓</option></select><label class="range-wrap">Min balls <input type="range" min="0" max="850" step="25" value="0" id="bowlMin"><b id="bowlMinVal">0</b></label></div><div class="table-wrap"><table id="bowlTable"></table></div></div>
+        <div class="card profile"><div class="card-head"><div><h2>Player intelligence card</h2><div class="card-sub">Select a row to inspect player evidence</div></div></div><div id="bowlProfile"></div></div>
+      </div>
+      <div class="card section-gap"><div class="card-head"><div><h2>Pressure scoring leaderboard</h2><div class="card-sub">Composite scores of the displayed top-ten list</div></div></div><div id="bowlLeaderboard"></div></div>
+    </section>
+
+    <section class="page" id="page-compare">
+      <div class="hero"><div><div class="eyebrow">Scouting tools · head-to-head</div><h1>Player comparison</h1><p class="lead">Compare two shortlisted players within the same role. Use pressure exposure and baseline movement alongside model score.</p></div><span class="pill">Same-role comparison</span></div>
+      <div class="card"><div class="compare-controls"><label><span class="card-sub">Role</span><select class="field" id="cmpRole" style="width:100%"><option value="Batter">Batter</option><option value="Bowler">Bowler</option></select></label><label><span class="card-sub">Player A</span><select class="field" id="cmpA" style="width:100%"></select></label><label><span class="card-sub">Player B</span><select class="field" id="cmpB" style="width:100%"></select></label></div><div class="compare-result section-gap" id="compareResult"></div></div>
+    </section>
+
+    <section class="page" id="page-method">
+      <div class="hero"><div><div class="eyebrow">Model transparency</div><h1>Methodology & evidence</h1><p class="lead">The pressure label is analyst-defined. The score balances performance under pressure, change against a player-specific baseline and consistency.</p></div><span class="pill">Auditable framework</span></div>
+      <div class="grid two">
+        <div class="card"><div class="card-head"><div><h2>Pressure classification</h2><div class="card-sub">Delivery-level match-state rules</div></div></div><div class="method-grid">
+          <div class="method"><span class="method-number">01</span><b>Chase urgency</b><p>Second innings: required run rate ≥ 9.5, or at least 2.0 above current run rate.</p></div>
+          <div class="method"><span class="method-number">02</span><b>Wicket pressure</b><p>Second innings: five or fewer wickets remaining after 12 legal overs.</p></div>
+          <div class="method"><span class="method-number">03</span><b>First-innings finish</b><p>From over 16 with five or fewer wickets remaining, or over 18 regardless of wickets.</p></div>
+          <div class="method"><span class="method-number">04</span><b>Player baseline</b><p>Pressure performance is compared with the same player’s non-pressure deliveries in the analysis sample.</p></div>
+        </div></div>
+        <div class="card"><div class="card-head"><div><h2>Scoring weights</h2><div class="card-sub">Percentile-normalised metrics within eligible role pools</div></div></div>
+          <div class="method"><b>Batters · 100%</b><p>Pressure strike rate 30% · boundary rate 15% · inverse dot rate 15% · inverse dismissal rate 15% · strike-rate improvement 15% · consistency 10%.</p></div>
+          <div class="method section-gap"><b>Bowlers · 100%</b><p>Inverse pressure economy 30% · wickets per 100 legal balls 20% · dot-ball rate 15% · inverse boundary rate 10% · economy improvement 15% · consistency 10%.</p></div>
+          <div class="method section-gap"><b>Eligibility gates</b><p>Batters: ≥200 pressure legal balls, ≥15 pressure matches and ≥120 baseline legal balls. Bowlers: ≥180 pressure legal balls, ≥15 pressure matches and ≥120 baseline legal balls.</p></div>
+        </div>
+      </div>
+      <div class="card section-gap"><div class="card-head"><div><h2>Dataset coverage & caveats</h2><div class="card-sub">Source-snapshot coverage used by this dashboard</div></div></div><div id="coverageTable"></div><div class="notice" style="margin-top:14px">Interpret rankings as model-based shortlists rather than universal player-quality claims. Pressure thresholds and metric weights are analyst choices; venue, opposition strength, pitch, role and match leverage are not fully adjusted. The public dashboard includes derived top-ten results only, not the raw competition data.</div></div>
+    </section>
+    <div class="footer"><span>SUPERR SELECTOR · PRESSURE INTELLIGENCE · ROUND 01</span><span>Updated data snapshot · Analysis window 23 Jan 2022 – 1 Nov 2026</span></div>
+  </main>
+</div>
+</div>
+<script>
+const DATA = {"players":[{"category":"Batter","rank":1,"player":"Shashank Singh","player_id":2756,"composite_score":88.8,"pressure_balls":364,"pressure_matches":31,"pressure_metric":182.69,"non_pressure_baseline":122.45,"change_vs_baseline":60.24,"wickets_per_100_pressure_balls":"","pressure_dot_rate":0.2527,"pressure_boundary_rate":0.2555,"pressure_dismissal_rate":0.0357,"match_to_match_consistency_sd":91.65},{"category":"Batter","rank":2,"player":"Tim David","player_id":6396,"composite_score":81.88,"pressure_balls":608,"pressure_matches":62,"pressure_metric":196.88,"non_pressure_baseline":158.15,"change_vs_baseline":38.72,"wickets_per_100_pressure_balls":"","pressure_dot_rate":0.2928,"pressure_boundary_rate":0.2845,"pressure_dismissal_rate":0.0543,"match_to_match_consistency_sd":95.06},{"category":"Batter","rank":3,"player":"Tristan Stubbs","player_id":20702,"composite_score":81.15,"pressure_balls":590,"pressure_matches":50,"pressure_metric":170.51,"non_pressure_baseline":123.52,"change_vs_baseline":46.99,"wickets_per_100_pressure_balls":"","pressure_dot_rate":0.2508,"pressure_boundary_rate":0.2254,"pressure_dismissal_rate":0.0458,"match_to_match_consistency_sd":80.34},{"category":"Batter","rank":4,"player":"Dinesh Karthik","player_id":143,"composite_score":80.34,"pressure_balls":456,"pressure_matches":50,"pressure_metric":188.38,"non_pressure_baseline":111.6,"change_vs_baseline":76.77,"wickets_per_100_pressure_balls":"","pressure_dot_rate":0.2829,"pressure_boundary_rate":0.2807,"pressure_dismissal_rate":0.0702,"match_to_match_consistency_sd":86.93},{"category":"Batter","rank":5,"player":"Reeza Hendricks","player_id":768,"composite_score":79.76,"pressure_balls":363,"pressure_matches":18,"pressure_metric":168.87,"non_pressure_baseline":129.72,"change_vs_baseline":39.15,"wickets_per_100_pressure_balls":"","pressure_dot_rate":0.292,"pressure_boundary_rate":0.2617,"pressure_dismissal_rate":0.0303,"match_to_match_consistency_sd":91.87},{"category":"Batter","rank":6,"player":"Shivam Dube","player_id":4755,"composite_score":78.49,"pressure_balls":629,"pressure_matches":57,"pressure_metric":172.81,"non_pressure_baseline":141.45,"change_vs_baseline":31.37,"wickets_per_100_pressure_balls":"","pressure_dot_rate":0.2814,"pressure_boundary_rate":0.2369,"pressure_dismissal_rate":0.0541,"match_to_match_consistency_sd":73.49},{"category":"Batter","rank":7,"player":"Naman Dhir","player_id":37052,"composite_score":78.08,"pressure_balls":262,"pressure_matches":29,"pressure_metric":193.51,"non_pressure_baseline":150.4,"change_vs_baseline":43.11,"wickets_per_100_pressure_balls":"","pressure_dot_rate":0.2672,"pressure_boundary_rate":0.2939,"pressure_dismissal_rate":0.0763,"match_to_match_consistency_sd":90.6},{"category":"Batter","rank":8,"player":"Sanju Samson","player_id":2258,"composite_score":77.6,"pressure_balls":521,"pressure_matches":54,"pressure_metric":175.62,"non_pressure_baseline":148.64,"change_vs_baseline":26.98,"wickets_per_100_pressure_balls":"","pressure_dot_rate":0.3301,"pressure_boundary_rate":0.2802,"pressure_dismissal_rate":0.0518,"match_to_match_consistency_sd":76.22},{"category":"Batter","rank":9,"player":"Rinku Singh","player_id":4708,"composite_score":76.3,"pressure_balls":647,"pressure_matches":63,"pressure_metric":178.21,"non_pressure_baseline":126.35,"change_vs_baseline":51.86,"wickets_per_100_pressure_balls":"","pressure_dot_rate":0.3107,"pressure_boundary_rate":0.2597,"pressure_dismissal_rate":0.0603,"match_to_match_consistency_sd":94.57},{"category":"Batter","rank":10,"player":"Virat Kohli","player_id":47,"composite_score":74.86,"pressure_balls":560,"pressure_matches":43,"pressure_metric":162.86,"non_pressure_baseline":140.05,"change_vs_baseline":22.8,"wickets_per_100_pressure_balls":"","pressure_dot_rate":0.2839,"pressure_boundary_rate":0.2411,"pressure_dismissal_rate":0.0339,"match_to_match_consistency_sd":78.86},{"category":"Bowler","rank":1,"player":"Abrar Ahmed","player_id":5979,"composite_score":93.83,"pressure_balls":315,"pressure_matches":22,"pressure_metric":5.98,"non_pressure_baseline":7.18,"change_vs_baseline":1.19,"wickets_per_100_pressure_balls":7.3,"pressure_dot_rate":0.4635,"pressure_boundary_rate":0.0952,"pressure_dismissal_rate":"","match_to_match_consistency_sd":3.19},{"category":"Bowler","rank":2,"player":"Mohammad Nawaz","player_id":2490,"composite_score":93.16,"pressure_balls":368,"pressure_matches":28,"pressure_metric":6.41,"non_pressure_baseline":7.54,"change_vs_baseline":1.13,"wickets_per_100_pressure_balls":9.78,"pressure_dot_rate":0.4212,"pressure_boundary_rate":0.106,"pressure_dismissal_rate":"","match_to_match_consistency_sd":4.36},{"category":"Bowler","rank":3,"player":"Taskin Ahmed","player_id":2681,"composite_score":84.49,"pressure_balls":400,"pressure_matches":37,"pressure_metric":8.1,"non_pressure_baseline":7.94,"change_vs_baseline":-0.16,"wickets_per_100_pressure_balls":8.75,"pressure_dot_rate":0.42,"pressure_boundary_rate":0.165,"pressure_dismissal_rate":"","match_to_match_consistency_sd":4.13},{"category":"Bowler","rank":4,"player":"Jasprit Bumrah","player_id":2933,"composite_score":81.95,"pressure_balls":823,"pressure_matches":70,"pressure_metric":7.39,"non_pressure_baseline":7.15,"change_vs_baseline":-0.23,"wickets_per_100_pressure_balls":6.68,"pressure_dot_rate":0.4253,"pressure_boundary_rate":0.1482,"pressure_dismissal_rate":"","match_to_match_consistency_sd":3.54},{"category":"Bowler","rank":5,"player":"Shaheen Afridi","player_id":6355,"composite_score":81.48,"pressure_balls":469,"pressure_matches":45,"pressure_metric":7.47,"non_pressure_baseline":8.48,"change_vs_baseline":1.01,"wickets_per_100_pressure_balls":7.46,"pressure_dot_rate":0.452,"pressure_boundary_rate":0.1663,"pressure_dismissal_rate":"","match_to_match_consistency_sd":6.03},{"category":"Bowler","rank":6,"player":"Mitchell Santner","player_id":4101,"composite_score":81.37,"pressure_balls":668,"pressure_matches":43,"pressure_metric":6.83,"non_pressure_baseline":7.83,"change_vs_baseline":1,"wickets_per_100_pressure_balls":7.04,"pressure_dot_rate":0.4177,"pressure_boundary_rate":0.1153,"pressure_dismissal_rate":"","match_to_match_consistency_sd":5.53},{"category":"Bowler","rank":7,"player":"Mayank Yadav","player_id":27960,"composite_score":79.38,"pressure_balls":255,"pressure_matches":17,"pressure_metric":8.19,"non_pressure_baseline":10.64,"change_vs_baseline":2.46,"wickets_per_100_pressure_balls":6.67,"pressure_dot_rate":0.4784,"pressure_boundary_rate":0.1882,"pressure_dismissal_rate":"","match_to_match_consistency_sd":4.32},{"category":"Bowler","rank":8,"player":"Mohammad Rishad Hossain","player_id":8380,"composite_score":79.22,"pressure_balls":316,"pressure_matches":29,"pressure_metric":8.22,"non_pressure_baseline":8.61,"change_vs_baseline":0.39,"wickets_per_100_pressure_balls":8.54,"pressure_dot_rate":0.3861,"pressure_boundary_rate":0.1646,"pressure_dismissal_rate":"","match_to_match_consistency_sd":4.59},{"category":"Bowler","rank":9,"player":"Sunil Narine","player_id":781,"composite_score":78.87,"pressure_balls":506,"pressure_matches":36,"pressure_metric":6.6,"non_pressure_baseline":7.01,"change_vs_baseline":0.4,"wickets_per_100_pressure_balls":5.73,"pressure_dot_rate":0.3893,"pressure_boundary_rate":0.0968,"pressure_dismissal_rate":"","match_to_match_consistency_sd":3.23},{"category":"Bowler","rank":10,"player":"Gudakesh Motie","player_id":3276,"composite_score":77.93,"pressure_balls":197,"pressure_matches":18,"pressure_metric":7.77,"non_pressure_baseline":8.4,"change_vs_baseline":0.63,"wickets_per_100_pressure_balls":8.12,"pressure_dot_rate":0.3807,"pressure_boundary_rate":0.1472,"pressure_dismissal_rate":"","match_to_match_consistency_sd":5.95}],"coverage":{"raw_rows":200999,"analysis_deliveries":193988,"match_ids_in_raw":867,"matches_in_analysis":837,"ipl_matches":367,"t20i_matches":470,"eligible_batters":104,"eligible_bowlers":128,"window":"23 Jan 2022 – 1 Nov 2026"}};
+const all = DATA.players;
+const batters = all.filter(x=>x.category==="Batter").sort((a,b)=>a.rank-b.rank);
+const bowlers = all.filter(x=>x.category==="Bowler").sort((a,b)=>a.rank-b.rank);
+let selectedBatter = batters[0], selectedBowler = bowlers[0];
+const $ = id => document.getElementById(id);
+const fmt = (n,d=2) => Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct = n => (Number(n)*100).toFixed(1)+"%";
+const clean = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function kpis(){
+ const c=DATA.coverage;
+ const items=[
+  ["Deliveries analysed",c.analysis_deliveries.toLocaleString(),"Filtered IPL + T20I delivery sample","rgba(232,91,157,.12)"],
+  ["Matches analysed",c.matches_in_analysis.toLocaleString(),"Across both competitions","rgba(167,139,250,.12)"],
+  ["IPL matches",c.ipl_matches.toLocaleString(),"Included in analysis","rgba(96,214,173,.12)"],
+  ["T20I matches",c.t20i_matches.toLocaleString(),"Included in analysis","rgba(242,195,107,.12)"]
+ ];
+ $("kpis").innerHTML=items.map(x=>`<div class="kpi" style="--glow:${x[3]}"><div class="kpi-label">${x[0]}</div><div class="kpi-value">${x[1]}</div><div class="kpi-foot">${x[2]}</div></div>`).join("");
+}
+function leaders(list,id,green=false){
+ $(id).innerHTML=list.slice(0,5).map((p,i)=>`<div class="leader-row"><div class="rank">${String(i+1).padStart(2,"0")}</div><div><div class="leader-name"><strong>${clean(p.player)}</strong><span>${fmt(p.composite_score,1)}</span></div><div class="track"><div class="fill ${green?"green":""}" style="width:${p.composite_score}%"></div></div></div><div class="value-score">${fmt(p.composite_score,1)}</div></div>`).join("");
+}
+function svgBars(rows,container,type){
+ const W=560,H=255,left=130,right=38,top=8,rowH=43,maxVal=Math.max(...rows.flatMap(p=>[Number(p.pressure_metric),Number(p.non_pressure_baseline)]))*1.12;
+ const x=v=>left+(v/maxVal)*(W-left-right);
+ const label=type==="bat"?"SR":"Econ";
+ let s=`<svg class="chart-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${type==="bat"?"Pressure strike rate":"Pressure bowling economy"} compared with baseline">`;
+ [0,.25,.5,.75,1].forEach(t=>{let xx=left+(W-left-right)*t;s+=`<line x1="${xx}" y1="4" x2="${xx}" y2="${H-18}" stroke="var(--line)" stroke-dasharray="3 5"/><text x="${xx}" y="${H-2}" class="axis-label" text-anchor="middle">${Math.round(maxVal*t)}</text>`});
+ rows.forEach((p,i)=>{let y=top+i*rowH;let a=Number(p.pressure_metric),b=Number(p.non_pressure_baseline);s+=`<text x="${left-9}" y="${y+17}" class="axis-label" text-anchor="end">${clean(p.player.split(" ").slice(-1)[0])}</text><rect x="${left}" y="${y+4}" width="${Math.max(1,x(a)-left)}" height="10" rx="5" fill="var(--accent)"/><rect x="${left}" y="${y+20}" width="${Math.max(1,x(b)-left)}" height="10" rx="5" fill="var(--accent2)" opacity=".78"/><text x="${Math.min(W-30,x(a)+5)}" y="${y+13}" class="axis-label">${fmt(a,1)}</text>`});
+ s+="</svg>";$(container).innerHTML=s;
+}
+function insight(){
+ const b=batters[0],w=bowlers[0];
+ $("scoutInsight").innerHTML=`<div class="insight"><small>Top-ranked under pressure</small><strong>${clean(b.player)} · Batter</strong><p>${b.pressure_balls} pressure balls across ${b.pressure_matches} matches. Pressure strike rate ${fmt(b.pressure_metric,1)} vs ${fmt(b.non_pressure_baseline,1)} baseline (+${fmt(b.change_vs_baseline,1)}).</p></div><div class="insight section-gap" style="border-color:rgba(96,214,173,.2);background:rgba(96,214,173,.06)"><small style="color:var(--green)">Bowling leader</small><strong>${clean(w.player)} · Bowler</strong><p>Pressure economy ${fmt(w.pressure_metric,2)} vs ${fmt(w.non_pressure_baseline,2)} baseline. ${fmt(w.wickets_per_100_pressure_balls,2)} wickets per 100 pressure legal balls.</p></div>`;
+ $("topBatScore").textContent=fmt(b.composite_score,2);
+ $("topBowlScore").textContent=fmt(w.composite_score,2);
+}
+function tableHTML(list,role){
+ const batter=role==="Batter";
+ const headers=batter?["Rank","Player","Score","Pressure balls","Matches","Pressure SR","Δ SR"]:["Rank","Player","Score","Pressure balls","Matches","Pressure Econ","Econ change"];
+ const rows=list.map(p=>`<tr data-id="${p.player_id}" class="${(batter?selectedBatter:selectedBowler)?.player_id===p.player_id?"selected":""}"><td>${p.rank}</td><td class="player-cell">${clean(p.player)}<span class="sub-cell">${batter?"Pressure batting profile":"Pressure bowling profile"}</span></td><td><span class="score-chip ${batter?"":"bowler"}">${fmt(p.composite_score,2)}</span></td><td>${Number(p.pressure_balls).toLocaleString()}</td><td>${p.pressure_matches}</td><td>${fmt(p.pressure_metric,batter?1:2)}</td><td class="${Number(p.change_vs_baseline)>=0?"delta positive":"delta negative"}">${Number(p.change_vs_baseline)>0?"+":""}${fmt(p.change_vs_baseline,2)}</td></tr>`).join("");
+ return `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows||`<tr><td colspan="7" class="empty">No players match these filters.</td></tr>`}</tbody>`;
+}
+function profileHTML(p,role){
+ if(!p)return `<div class="empty">No selected player.</div>`;
+ const batter=role==="Batter";
+ const metrics=batter?[
+  ["Pressure strike rate",fmt(p.pressure_metric,2)],
+  ["Baseline strike rate",fmt(p.non_pressure_baseline,2)],
+  ["SR change",`${p.change_vs_baseline>0?"+":""}${fmt(p.change_vs_baseline,2)}`],
+  ["Boundary rate",pct(p.pressure_boundary_rate)],
+  ["Dot-ball rate",pct(p.pressure_dot_rate)],
+  ["Dismissal rate",pct(p.pressure_dismissal_rate)],
+  ["Pressure balls",Number(p.pressure_balls).toLocaleString()],
+  ["Pressure matches",p.pressure_matches]
+ ]:[
+  ["Pressure economy",fmt(p.pressure_metric,2)],
+  ["Baseline economy",fmt(p.non_pressure_baseline,2)],
+  ["Economy improvement",`${p.change_vs_baseline>0?"+":""}${fmt(p.change_vs_baseline,2)}`],
+  ["Wickets / 100 balls",fmt(p.wickets_per_100_pressure_balls,2)],
+  ["Dot-ball rate",pct(p.pressure_dot_rate)],
+  ["Boundary rate conceded",pct(p.pressure_boundary_rate)],
+  ["Pressure balls",Number(p.pressure_balls).toLocaleString()],
+  ["Pressure matches",p.pressure_matches]
+ ];
+ return `<div class="profile-top"><div class="avatar">${clean(p.player.split(" ").map(x=>x[0]).slice(0,2).join("").toUpperCase())}</div><div><div class="profile-name">${clean(p.player)}</div><div class="profile-meta">${role} · Model rank #${p.rank}</div></div><div class="profile-score"><strong>${fmt(p.composite_score,2)}</strong><span>MODEL SCORE / 100</span></div></div><div class="profile-stats">${metrics.map((m,i)=>`<div class="stat"><span>${m[0]}</span><strong ${i===2?`class="delta ${Number(p.change_vs_baseline)>=0?"positive":"negative"}"`:""}>${m[1]}</strong></div>`).join("")}</div>`;
+}
+function leaderboard(list,id,green=false){
+ const max=100;
+ $(id).innerHTML=`<div class="leader-list">${list.map((p,i)=>`<div class="leader-row"><div class="rank">${String(i+1).padStart(2,"0")}</div><div><div class="leader-name"><strong>${clean(p.player)}</strong><span>${fmt(p.composite_score,2)}</span></div><div class="track"><div class="fill ${green?"green":""}" style="width:${p.composite_score/max*100}%"></div></div></div><div class="value-score">${fmt(p.composite_score,1)}</div></div>`).join("")}</div>`;
+}
+function filtered(role){
+ const batter=role==="Batter",prefix=batter?"bat":"bowl",list=batter?batters:bowlers;
+ const q=$(prefix+"Search").value.toLowerCase().trim(),min=Number($(prefix+"Min").value),sort=$(prefix+"Sort").value;
+ let a=list.filter(p=>p.player.toLowerCase().includes(q)&&Number(p.pressure_balls)>=min);
+ a.sort((x,y)=>sort==="score"?y.composite_score-x.composite_score:sort==="balls"?y.pressure_balls-x.pressure_balls:sort==="change"?y.change_vs_baseline-x.change_vs_baseline:x.rank-y.rank);
+ return a;
+}
+function updateRole(role){
+ const batter=role==="Batter",prefix=batter?"bat":"bowl",list=filtered(role);
+ $(prefix+"MinVal").textContent=$(prefix+"Min").value;
+ $(prefix+"Table").innerHTML=tableHTML(list,role);
+ $(prefix+"Profile").innerHTML=profileHTML(batter?selectedBatter:selectedBowler,role);
+ leaderboard(list,batter?"batLeaderboard":"bowlLeaderboard",!batter);
+ $(prefix+"Table").querySelectorAll("tbody tr[data-id]").forEach(tr=>tr.addEventListener("click",()=>{
+   const p=list.find(x=>String(x.player_id)===tr.dataset.id);
+   if(batter)selectedBatter=p;else selectedBowler=p;
+   updateRole(role);
+ }));
+}
+function downloadCSV(role){
+ const batter=role==="Batter",list=filtered(role);
+ const cols=batter?["rank","player","composite_score","pressure_balls","pressure_matches","pressure_metric","non_pressure_baseline","change_vs_baseline","pressure_dot_rate","pressure_boundary_rate","pressure_dismissal_rate","match_to_match_consistency_sd"]:["rank","player","composite_score","pressure_balls","pressure_matches","pressure_metric","non_pressure_baseline","change_vs_baseline","wickets_per_100_pressure_balls","pressure_dot_rate","pressure_boundary_rate","match_to_match_consistency_sd"];
+ const csv=[cols.join(","),...list.map(p=>cols.map(k=>{let v=p[k]??"";return `"${String(v).replace(/"/g,'""')}"`}).join(","))].join("\n");
+ const a=document.createElement("a"),url=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.href=url;a.download=`supeRR_${role.toLowerCase()}_shortlist.csv`;a.click();URL.revokeObjectURL(url);
+}
+function fillCompare(){
+ const role=$("cmpRole").value,list=role==="Batter"?batters:bowlers;
+ for(const id of ["cmpA","cmpB"]){const old=$(id).value;$(id).innerHTML=list.map(p=>`<option value="${p.player_id}">${clean(p.player)}</option>`).join("");if(list.some(p=>String(p.player_id)===old))$(id).value=old;}
+ if($("cmpA").value===$("cmpB").value&&list.length>1)$("cmpB").value=list[1].player_id;
+ compare();
+}
+function compare(){
+ const role=$("cmpRole").value,list=role==="Batter"?batters:bowlers;
+ const a=list.find(p=>String(p.player_id)===$("cmpA").value)||list[0],b=list.find(p=>String(p.player_id)===$("cmpB").value)||list[1];
+ const batter=role==="Batter";
+ function card(p){
+ const arr=batter?[["Pressure SR",fmt(p.pressure_metric,2)],["Baseline SR",fmt(p.non_pressure_baseline,2)],["SR change",`${p.change_vs_baseline>0?"+":""}${fmt(p.change_vs_baseline,2)}`],["Boundary rate",pct(p.pressure_boundary_rate)],["Dot-ball rate",pct(p.pressure_dot_rate)],["Dismissal rate",pct(p.pressure_dismissal_rate)]]:[["Pressure economy",fmt(p.pressure_metric,2)],["Baseline economy",fmt(p.non_pressure_baseline,2)],["Economy improvement",`${p.change_vs_baseline>0?"+":""}${fmt(p.change_vs_baseline,2)}`],["Wickets / 100 balls",fmt(p.wickets_per_100_pressure_balls,2)],["Dot-ball rate",pct(p.pressure_dot_rate)],["Boundary rate",pct(p.pressure_boundary_rate)]];
+ return `<div class="compare-player"><div class="profile-meta">${role} · Rank #${p.rank}</div><h3>${clean(p.player)}</h3><div class="compare-score">${fmt(p.composite_score,2)}<span style="font-size:10px;color:var(--muted);font-weight:600"> / 100</span></div><div class="compare-metrics">${arr.map(x=>`<div class="compare-metric"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("")}<div class="compare-metric"><span>Pressure exposure</span><b>${p.pressure_balls} balls · ${p.pressure_matches} matches</b></div></div></div>`;
+ }
+ $("compareResult").innerHTML=card(a)+card(b);
+}
+function coverageTable(){
+ const c=DATA.coverage;
+ const items=[["Raw ball-by-ball rows",c.raw_rows.toLocaleString()],["Distinct match IDs in raw file",c.match_ids_in_raw],["Filtered deliveries analysed",c.analysis_deliveries.toLocaleString()],["Matches with analysed deliveries",c.matches_in_analysis],["IPL matches",c.ipl_matches],["T20I matches",c.t20i_matches],["Eligible batter pool",c.eligible_batters],["Eligible bowler pool",c.eligible_bowlers],["Analysis window",c.window]];
+ $("coverageTable").innerHTML=`<div class="table-wrap"><table><thead><tr><th style="text-align:left">Coverage item</th><th>Value</th></tr></thead><tbody>${items.map(x=>`<tr><td style="text-align:left;font-weight:650">${x[0]}</td><td>${x[1]}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function navigate(page){
+ document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
+ $("crumb").textContent=({overview:"Overview",batters:"Batter rankings",bowlers:"Bowler rankings",compare:"Player comparison",method:"Model & methodology"})[page];
+ $("sidebar").classList.remove("open");
+}
+document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>navigate(b.dataset.page)));
+$("menuBtn").addEventListener("click",()=>$("sidebar").classList.toggle("open"));
+$("themeBtn").addEventListener("click",()=>{const light=document.body.dataset.theme!=="light";document.body.dataset.theme=light?"light":"dark";$("themeBtn").textContent=light?"☀":"◐";});
+["batSearch","batSort","batMin"].forEach(id=>$(id).addEventListener(id==="batSearch"?"input":"change",()=>updateRole("Batter")));
+["bowlSearch","bowlSort","bowlMin"].forEach(id=>$(id).addEventListener(id==="bowlSearch"?"input":"change",()=>updateRole("Bowler")));
+$("exportBat").addEventListener("click",()=>downloadCSV("Batter"));
+$("exportBowl").addEventListener("click",()=>downloadCSV("Bowler"));
+$("cmpRole").addEventListener("change",fillCompare);
+["cmpA","cmpB"].forEach(id=>$(id).addEventListener("change",compare));
+kpis();leaders(batters,"topBatters");leaders(bowlers,"topBowlers",true);insight();
+svgBars(batters.slice(0,5),"batCompareChart","bat");svgBars(bowlers.slice(0,5),"bowlCompareChart","bowl");
+updateRole("Batter");updateRole("Bowler");fillCompare();coverageTable();
+</script>
+</body>
+</html>
